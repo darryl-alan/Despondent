@@ -126,9 +126,11 @@
 							.join(' &bull; ')
 					+ ')';
 				}
+
+				const link = e.inviteSurveyLinkPretty.replace('app.respondent.io/', '');
 				return `<div class="alert alert-secondary">
 							<h5 class="text-primary">${e.companyName}</h5>
-							<h5><a target="_blank" class="no-decor" href="https://${e.inviteSurveyLinkPretty}">${e.name}</a></h5>
+							<h5><a target="_blank" class="no-decor" href="https://app.respondent.io/${link}">${e.name}</a></h5>
 							<h5 class="text-info">${e.country} ${cities}</h5>
 							<p>${e.description}</p>
 							<div class="text-large">
