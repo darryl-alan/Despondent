@@ -32,7 +32,6 @@
 		<div class="row">
 			<div class="col-xs-12 col-md-4 col-lg-3">
 				<div class="form-group">
-					<!--<label for="countries">Countries</label>-->
 					<select class="selectpicker" multiple id="countries"></select>
 				</div>
 			</div>
@@ -87,7 +86,8 @@
 		}
 
 		function loadProjects(){
-			$("#projectsLoadingIndicator").css('visibility', 'visible');
+			const $indicator = $("#projectsLoadingIndicator");
+			$indicator.css('visibility', 'visible');
 			const apikey = localStorage.getItem('apikey') || '';
 
 			let countries = JSON.parse(localStorage.getItem('selectedCountries') || '["all", "ID"]');
@@ -106,7 +106,7 @@
 			}).fail(function (jqXHR, textStatus, errorThrown) {
 				swal.fire('Error', 'Failed to load projects', 'error');
 			}).always(() => {
-				$("#projectsLoadingIndicator").css('visibility', 'hidden');
+				$indicator.css('visibility', 'hidden');
 			});
 		}
 
@@ -160,19 +160,22 @@
 
 
 		$(() => {
-			$("#apikey").val(localStorage.getItem('apikey') || '');
-			$("#apikey").on('input', function(){
+			const $apikey = $("#apikey");
+			const $countries = $("#countries");
+
+			$apikey.val(localStorage.getItem('apikey') || '');
+			$apikey.on('input', function(){
 				localStorage.setItem('apikey', $(this).val().trim());
 			});
 			const countries = JSON.parse(localStorage.getItem('countries') || '[]');
 			const options = countries.map(e => `<option value="${e}">${e}</option>`);
-			$("#countries").html(options).selectpicker('refresh');
+			$countries.html(options).selectpicker('refresh');
 
 			const selectedCountries = JSON.parse(localStorage.getItem('selectedCountries') || '[]');
-			$('#countries').selectpicker('val', selectedCountries);
+			$countries.selectpicker('val', selectedCountries);
 
 
-			$('#countries').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+			$countries.on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
 				const countries = $(this).val();
 				localStorage.setItem("selectedCountries", JSON.stringify(countries));
 			});
