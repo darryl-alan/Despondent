@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Despondent</title>
+	<meta name="viewport" content="initial-scale=1.0">
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.10/css/bootstrap-select.min.css" />
+	<style>
+		a, a:hover {
+			color: inherit;
+		}
+		a.no-decor, a.no-decor:hover {
+			color: black;
+		}
+
+		.text-large {
+			font-size: 120%;
+		}
+	</style>
+</head>
+<body>
+
+	<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+	<script src="https://getbootstrap.com/docs/4.1/assets/js/vendor/popper.min.js"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.10/js/bootstrap-select.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@8"></script>
+
+	<div class="container">
+		<h1>Despondent</h1>
+		<div class="row">
+			<div class="col-xs-12 col-md-4 col-lg-3">
+				<div class="form-group">
+					<!--<label for="countries">Countries</label>-->
+					<select class="selectpicker" multiple id="countries"></select>
+				</div>
+			</div>
+			<div class="col-xs-12 col-md-4 col-lg-3">
+				<div class="form-group" style="padding-top:3px;">
+					<button id="btnReload" class="btn btn-primary" type="button" style="margin-top:-16px;margin-right:10px;">Reload</button>
+					<div class="spinner-border" id="projectsLoadingIndicator" style="visibility:hidden;"></div>
+				</div>
+			</div>
+			<div class="col-xs-12 col-md-4 col-lg-3">
+				<div class="form-group">
+					<span class="badge badge-secondary text-large" id="totalCount"></span>
+				</div>
+			</div>
+			<div class="col-xs-12 col-md-4 col-lg-3">
+				<div class="form-group">
+					<input class="form-control" id="apikey">
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12">
+				<div id="projectsContainer"></div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		function loadCountries() {
+			const apikey = localStorage.getItem('apikey') || '';
+			$.ajax({
+				method: 'get',
+				url: '/countries',
+				dataType: 'text',
+				data: {apikey}
+			}).done(function (data, textStatus, jqXHR) {
+				try {
+					data = JSON.parse(data);
+					localStorage.setItem('countries', JSON.stringify(data));
+					const options = data.map(e => `<option value="${e}">${e}</option>`);
+					$("#countries").html(options).selectpicker('refresh');
+
+					const selectedCountries = JSON.parse(localStorage.getItem('selectedCountries') || '[]');
+					$('#countries').selectpicker('val', selectedCountries);
+				}
+				catch(e){
+					swal.fire('Error', data, 'error');
+				}
+			}).fail(function (jqXHR, textStatus, errorThrown) {
+				swal.fire('Error', 'Failed to load countries', 'error');
+			});
+		}
+
+		function loadProjects(){
+			$("#projectsLoadingIndicator").css('visibility', 'visible');
+			const apikey = localStorage.getItem('apikey') || '';
+
+			let countries = JSON.parse(localStorage.getItem('selectedCountries') || '["all", "ID"]');
+
+			const filter = {countries: countries};
+			const data = {apikey: apikey, filter: JSON.stringify(filter)};
+
+			$.ajax({
+				method: 'get',
+				url: '/projects',
+				dataType: 'text',
+				data: data
+			}).done(function (data, textStatus, jqXHR) {
+				data = JSON.parse(data);
+				renderProjects(data);
+			}).fail(function (jqXHR, textStatus, errorThrown) {
+				swal.fire('Error', 'Failed to load projects', 'error');
+			}).always(() => {
+				$("#projectsLoadingIndicator").css('visibility', 'hidden');
+			});
+		}
+
+		function renderProjects(data){
+			$("#totalCount").html('Total: ' + data.length);
+			const html = data.map(e => {
+				let preferences = '';
+				if(e.preferences && Array.isArray(e.preferences) && e.preferences.length){
+					preferences = e.preferences.map(z => /*z.path +': ' +*/  z.name);
+					preferences = preferences.join('<br>');
+				}
+				let cities = '';
+				if(e.cities && Array.isArray(e.cities) && e.cities.length){
+					cities = '(' +
+						e.cities.filter(z=>z.location).map(z =>
+							`<a target="_blank" href="https://www.google.com/maps/place/${z.location.location.latitude},${z.location.location.longitude}">${z.location.formattedAddress}</a>`)
+							.join(' &bull; ')
+					+ ')';
+				}
+				return `<div class="alert alert-secondary">
+							<h5 class="text-primary">${e.companyName}</h5>
+							<h5><a target="_blank" class="no-decor" href="https://${e.inviteSurveyLinkPretty}">${e.name}</a></h5>
+							<h5 class="text-info">${e.country} ${cities}</h5>
+							<p>${e.description}</p>
+							<div class="text-large">
+								<span class="text-success font-weight-bold">${e.respondentRemunerationFormatted}</span>
+								&bull;
+								<span class="length">${e.studyLengthFormatted}</span>
+								&bull;
+								<span class="kind">${e.kindOfResearchFormatted}</span>
+								&bull;
+								<span class="timezone">${e.timezone}</span>
+								&bull;
+								<span>${e.qualifiedCount} qualified, ${e.percentageFilled}% filled</span>
+								<span class="text-danger">${e.oversubscribed? 'Oversubscribed' : ''}</span>
+							</div>
+							<br>
+							<div class="jobs">
+								<span class="font-weight-bold">Jobs: ${(e.professionalJobTitles || []).join(' &bull; ')}</span>
+							</div>
+							<br>
+							<div class="preferences">
+								<span class="">Preferences:<br>${preferences}</span>
+							</div>
+						</div>`;
+			});
+			$("#projectsContainer").html(html);
+		}
+
+
+		$(() => {
+			$("#apikey").val(localStorage.getItem('apikey') || '');
+			$("#apikey").on('input', function(){
+				localStorage.setItem('apikey', $(this).val().trim());
+			});
+			const countries = JSON.parse(localStorage.getItem('countries') || '[]');
+			const options = countries.map(e => `<option value="${e}">${e}</option>`);
+			$("#countries").html(options).selectpicker('refresh');
+
+			const selectedCountries = JSON.parse(localStorage.getItem('selectedCountries') || '[]');
+			$('#countries').selectpicker('val', selectedCountries);
+
+
+			$('#countries').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+				const countries = $(this).val();
+				localStorage.setItem("selectedCountries", JSON.stringify(countries));
+			});
+
+			$("#btnReload").click(() => loadProjects());
+			loadCountries();
+			loadProjects();
+		});
+	</script>
+</body>
+</html>
