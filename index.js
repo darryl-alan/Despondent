@@ -37,7 +37,7 @@ const options = {
 	body: JSON.stringify({"limit":1,"skip":0,"researchConductType":null,"query":"","compensation":{"min":5,"max":1000},"duration":{"min":5,"max":240}})
 };
 
-setInterval(getProjects, 1800000);
+setInterval(getProjects, 600000);
 
 function getProjects() {
 	request(options, (error, response, body) => {
