@@ -5,6 +5,7 @@ const cors = require('cors');
 const request = require('request');
 
 
+
 let port = process.env.PORT;
 if (port == null || port == "") {
 	port = 3000;
@@ -99,6 +100,7 @@ function getProjects() {
 
 app.use(cors());
 app.use(express.urlencoded({extended: true}));
+app.use('/lib', express.static('lib'));
 
 function onlyUnique(value, index, self) {
 	return self.indexOf(value) === index;
